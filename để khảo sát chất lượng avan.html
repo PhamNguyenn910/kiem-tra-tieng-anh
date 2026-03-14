@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Thi Trực Tuyến - Giám Sát Cấp Độ MAX</title>
+    <style>
+        /* CSS Định dạng giao diện */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f9; margin: 0; padding: 0; user-select: none; /* Chống bôi đen */ }
+        
+        /* Màn hình bắt đầu */
+        #start-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #2c3e50; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; }
+        #start-screen h1 { margin-bottom: 20px; }
+        #start-screen ul { font-size: 18px; margin-bottom: 30px; max-width: 600px; line-height: 1.6; }
+        .btn-start { padding: 15px 40px; font-size: 20px; background-color: #e74c3c; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; text-transform: uppercase; transition: 0.3s; }
+        .btn-start:hover { background-color: #c0392b; }
+        
+        /* Màn hình PHONG TỎA (Chống gian lận) */
+        #cheat-blocker { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(192, 57, 43, 0.98); color: white; z-index: 100000; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; box-sizing: border-box; }
+        #cheat-blocker h1 { font-size: 3rem; margin-bottom: 10px; text-transform: uppercase; }
+        #cheat-blocker p { font-size: 1.5rem; margin-bottom: 20px; max-width: 800px; }
+        .btn-resume { padding: 15px 30px; font-size: 20px; background: #f1c40f; color: #2c3e50; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        .btn-resume:hover { background: #f39c12; }
+
+        /* Giao diện bài thi */
+        #test-container { display: none; max-width: 900px; margin: 80px auto 40px; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .header-bar { position: fixed; top: 0; left: 0; width: 100%; background: #34495e; color: white; padding: 15px 0; text-align: center; font-size: 24px; font-weight: bold; z-index: 1000; display: flex; justify-content: space-around; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        #timer { color: #f1c40f; }
+        #warning-box { color: #e74c3c; font-size: 18px; background: white; padding: 5px 15px; border-radius: 20px; font-weight: bold;}
+        
+        .question-block { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #ecf0f1; }
+        .question-text { font-weight: bold; margin-bottom: 10px; font-size: 18px; }
+        .options-group label { display: block; margin-bottom: 8px; cursor: pointer; font-size: 16px; padding: 5px; border-radius: 4px; transition: background 0.2s; }
+        .options-group label:hover { background-color: #f1f2f6; }
+        
+        #submit-btn { display: block; width: 100%; padding: 15px; font-size: 18px; background: #27ae60; color: white; border: none; border-radius: 5px; cursor: pointer; margin-top: 30px; font-weight: bold; }
+        #submit-btn:hover { background: #2ecc71; }
+        
+        #student-info { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+        #student-info input { padding: 10px; font-size: 16px; border-radius: 4px; border: 1px solid #ccc; width: 300px; text-align: center; }
+    </style>
+</head>
+<body oncontextmenu="return false;">
+
+    <div id="start-screen">
+        <h1>BÀI KIỂM TRA CHẤT LƯỢNG GIỮA KỲ II - TIẾNG ANH</h1>
+        <div id="student-info">
+            <input type="text" id="studentName" placeholder="Nhập Họ và Tên của em" required>
+            <input type="text" id="studentClass" placeholder="Nhập Lớp" required>
+        </div>
+        <ul>
+            <li>NỘI QUY PHÒNG THI:</li>
+            <li>1. Hệ thống sẽ khóa toàn màn hình.</li>
+            <li>2. Mọi hành vi: <b>Alt+Tab, Bấm Esc, Mở tab khác, Click ra ngoài</b> đều bị ghi nhận.</li>
+            <li>3. Khi vi phạm, bài thi sẽ bị TÊ LIỆT hoàn toàn.</li>
+            <li>4. Vi phạm quá <b>3 lần</b> -> Hủy bài và tự động nộp điểm 0.</li>
+        </ul>
+        <button class="btn-start" onclick="startTest()">Đã hiểu - Bắt đầu làm bài</button>
+    </div>
+
+    <div id="cheat-blocker">
+        <h1>🚨 PHÁT HIỆN VI PHẠM 🚨</h1>
+        <p id="cheat-reason">Hệ thống phát hiện em vừa chuyển tab hoặc thoát toàn màn hình!</p>
+        <p>Đề thi đã bị tạm khóa che khuất. Hành động này đã được ghi vào lịch sử nộp cho giáo viên.</p>
+        <button class="btn-resume" onclick="resumeExam()">XÁC NHẬN LỖI - QUAY LẠI TOÀN MÀN HÌNH</button>
+        <p style="margin-top: 20px; font-size: 1.2rem;">(Số lần vi phạm: <span id="blocker-violation-count">0</span>/3)</p>
+    </div>
+
+    <div class="header-bar" id="header-bar" style="display:none;">
+        <div>Thí sinh: <span id="display-name"></span></div>
+        <div id="timer">Thời gian: 150:00</div>
+        <div id="warning-box">Lỗi Vi Phạm: <span id="violation-count">0</span>/3</div>
+    </div>
+
+    <div id="test-container">
+        
+        <div class="question-block">
+            <div class="section">
+        <h2>PART I: MULTIPLE CHOICE (60 câu)</h2>
+
+        <h3>UNIT 4: OUR PLANET (Q1 - Q20)</h3>
+        <p class="instruction">Choose the word whose underlined part is pronounced differently:</p>
+        
+        <div class="question-block">
+            <div class="question-text">1. A. c<u>o</u>ld &nbsp;&nbsp; B. sn<u>o</u>w &nbsp;&nbsp; C. st<u>o</u>rm &nbsp;&nbsp; D. sh<u>o</u>w</div>
+            <div class="options-group">
+                <label><input type="radio" name="q1" value="A"> A</label>
+                <label><input type="radio" name="q1" value="B"> B</label>
+                <label><input type="radio" name="q1" value="C"> C</label>
+                <label><input type="radio" name="q1" value="D"> D</label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">2. A. w<u>i</u>nd &nbsp;&nbsp; B. m<u>i</u>st &nbsp;&nbsp; C. <u>i</u>ce &nbsp;&nbsp; D. ch<u>i</u>ll</div>
+            <div class="options-group">
+                <label><input type="radio" name="q2" value="A"> A</label>
+                <label><input type="radio" name="q2" value="B"> B</label>
+                <label><input type="radio" name="q2" value="C"> C</label>
+                <label><input type="radio" name="q2" value="D"> D</label>
+            </div>
+        </div>
+
+        <p class="instruction">Choose the word that has a different stress pattern:</p>
+        
+        <div class="question-block">
+            <div class="question-text">3. A. weather &nbsp;&nbsp; B. climate &nbsp;&nbsp; C. degree &nbsp;&nbsp; D. thunder</div>
+            <div class="options-group">
+                <label><input type="radio" name="q3" value="A"> A</label>
+                <label><input type="radio" name="q3" value="B"> B</label>
+                <label><input type="radio" name="q3" value="C"> C</label>
+                <label><input type="radio" name="q3" value="D"> D</label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">4. A. hurricane &nbsp;&nbsp; B. tornado &nbsp;&nbsp; C. volcano &nbsp;&nbsp; D. disaster</div>
+            <div class="options-group">
+                <label><input type="radio" name="q4" value="A"> A</label>
+                <label><input type="radio" name="q4" value="B"> B</label>
+                <label><input type="radio" name="q4" value="C"> C</label>
+                <label><input type="radio" name="q4" value="D"> D</label>
+            </div>
+        </div>
+
+        <p class="instruction">Choose the best answer to complete the sentences:</p>
+
+        <div class="question-block">
+            <div class="question-text">5. It is very _____ today. Look at the sky, I can't see the sun at all.</div>
+            <div class="options-group">
+                <label><input type="radio" name="q5" value="A"> A. sunny</label>
+                <label><input type="radio" name="q5" value="B"> B. cloudy</label>
+                <label><input type="radio" name="q5" value="C"> C. clear</label>
+                <label><input type="radio" name="q5" value="D"> D. hot</label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">6. A _____ is a very strong wind that goes round in a circle and destroys buildings.</div>
+            <div class="options-group">
+                <label><input type="radio" name="q6" value="A"> A. flood</label>
+                <label><input type="radio" name="q6" value="B"> B. earthquake</label>
+                <label><input type="radio" name="q6" value="C"> C. tornado</label>
+                <label><input type="radio" name="q6" value="D"> D. drought</label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">7. Global _____ is a serious problem because it makes the Earth's temperature rise.</div>
+            <div class="options-group">
+                <label><input type="radio" name="q7" value="A"> A. warming</label>
+                <label><input type="radio" name="q7" value="B"> B. warning</label>
+                <label><input type="radio" name="q7" value="C"> C. raining</label>
+                <label><input type="radio" name="q7" value="D"> D. moving</label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">8. To protect the planet, we should use _____ energy like solar and wind power.</div>
+            <div class="options-group">
+                <label><input type="radio" name="q8" value="A"> A. fossil</label>
+                <label><input type="radio" name="q8" value="B"> B. old</label>
+                <label><input type="radio" name="q8" value="C"> C. renewable</label>
+                <label><input type="radio" name="q8" value="D"> D. dirty</label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">9. The ground is white and covered in _____. It's freezing outside!</div>
+            <div class="options-group">
+                <label><input type="radio" name="q9" value="A"> A. rain</label>
+                <label><input type="radio" name="q9" value="B"> B. wind</label>
+                <label><input type="radio" name="q9" value="C"> C. thunder</label>
+                <label><input type="radio" name="q9" value="D"> D. frost</label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">10. Russia is _____ country in the world.</div>
+            <div class="options-group">
+                <label><input type="radio" name="q10" value="A"> A. the biggest</label>
+                <label><input type="radio" name="q10" value="B"> B. bigger</label>
+                <label><input type="radio" name="q10" value="C"> C. biggest</label>
+                <label><input type="radio" name="q10" value="D"> D. the bigger</label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">11. This English test is _____ than the last one we did.</div>
+            <div class="options-group">
+                <label><input type="radio" name="q11" value="A"> A. easy</label>
+                <label><input type="radio" name="q11" value="B"> B. easier</label>
+                <label><input type="radio" name="q11" value="C"> C. easiest</label>
+                <label><input type="radio" name="q11" value="D"> D. the easiest</label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">12. My bag is 5kg. Your bag is 5kg. My bag is _____ yours.</div>
+            <div class="options-group">
+                <label><input type="radio" name="q12" value="A"> A. as heavy as</label>
+                <label><input type="radio" name="q12" value="B"> B. heavier than</label>
+                <label><input type="radio" name="q12" value="C"> C. more heavy</label>
+                <label><input type="radio" name="q12" value="D"> D. the heaviest</label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">13. The water in the river is _____ cold to swim in today.</div>
+            <div class="options-group">
+                <label><input type="radio" name="q13" value="A"> A. enough</label>
+                <label><input type="radio" name="q13" value="B"> B. too</label>
+                <label><input type="radio" name="q13" value="C"> C. much</label>
+                <label><input type="radio" name="q13" value="D"> D. more</label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">14. He isn't tall _____ to play in the school basketball team.</div>
+            <div class="options-group">
+                <label><input type="radio" name="q14" value="A"> A. too</label>
+                <label><input type="radio" name="q14" value="B"> B. very</label>
+                <label><input type="radio" name="q14" value="C"> C. enough</label>
+                <label><input type="radio" name="q14" value="D"> D. so</label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">15. This is _____ beautiful beach I have ever seen in my life.</div>
+            <div class="options-group">
+                <label><input type="radio" name="q15" value="A"> A. more</label>
+                <label><input type="radio" name="q15" value="B"> B. the most</label>
+                <label><input type="radio" name="q15" value="C"> C. most</label>
+                <label><input type="radio" name="q15" value="D"> D. much</label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">16. Today the temperature is 35 degrees. Yesterday it was 30 degrees. Today is _____ than yesterday.</div>
+            <div class="options-group">
+                <label><input type="radio" name="q16" value="A"> A. hotter</label>
+                <label><input type="radio" name="q16" value="B"> B. hottest</label>
+                <label><input type="radio" name="q16" value="C"> C. hot</label>
+                <label><input type="radio" name="q16" value="D"> D. the hottest</label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">17. If we _____ down fewer trees, the forests will be safe.</div>
+            <div class="options-group">
+                <label><input type="radio" name="q17" value="A"> A. go</label>
+                <label><input type="radio" name="q17" value="B"> B. use</label>
+                <label><input type="radio" name="q17" value="C"> C. cut</label>
+                <label><input type="radio" name="q17" value="D"> D. die</label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">18. Many wild animals might _____ out if we don't protect their homes.</div>
+            <div class="options-group">
+                <label><input type="radio" name="q18" value="A"> A. die</label>
+                <label><input type="radio" name="q18" value="B"> B. cut</label>
+                <label><input type="radio" name="q18" value="C"> C. give</label>
+                <label><input type="radio" name="q18" value="D"> D. look</label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">19. Learning English can be hard, but don't _____ up! You can do it!</div>
+            <div class="options-group">
+                <label><input type="radio" name="q19" value="A"> A. look</label>
+                <label><input type="radio" name="q19" value="B"> B. give</label>
+                <label><input type="radio" name="q19" value="C"> C. close</label>
+                <label><input type="radio" name="q19" value="D"> D. take</label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">20. We shouldn't _____ up all the clean water on Earth.</div>
+            <div class="options-group">
+                <label><input type="radio" name="q20" value="A"> A. close</label>
+                <label><input type="radio" name="q20" value="B"> B. use</label>
+                <label><input type="radio" name="q20" value="C"> C. die</label>
+                <label><input type="radio" name="q20" value="D"> D. go</label>
+            </div>
+        </div>
+
+        <h3>UNIT 5: AMBITION (Q21 - Q40)</h3>
+        <p class="instruction">Choose the word whose underlined part is pronounced differently:</p>
+
+        <div class="question-block">
+            <div class="question-text">21. A. b<u>a</u>ker &nbsp;&nbsp; B. s<u>a</u>les &nbsp;&nbsp; C. c<u>a</u>reer &nbsp;&nbsp; D. w<u>a</u>iter</div>
+            <div class="options-group">
+                <label><input type="radio" name="q21" value="A"> A</label>
+                <label><input type="radio" name="q21" value="B"> B</label>
+                <label><input type="radio" name="q21" value="C"> C</label>
+                <label><input type="radio" name="q21" value="D"> D</label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">22. A. b<u>u</u>tcher &nbsp;&nbsp; B. c<u>u</u>stomer &nbsp;&nbsp; C. st<u>u</u>nt &nbsp;&nbsp; D. f<u>u</u>ture</div>
+            <div class="options-group">
+                <label><input type="radio" name="q22" value="A"> A</label>
+                <label><input type="radio" name="q22" value="B"> B</label>
+                <label><input type="radio" name="q22" value="C"> C</label>
+                <label><input type="radio" name="q22" value="D"> D</label>
+            </div>
+        </div>
+
+        <p class="instruction">Choose the word that has a different stress pattern:</p>
+
+        <div class="question-block">
+            <div class="question-text">23. A. pilot &nbsp;&nbsp; B. builder &nbsp;&nbsp; C. police &nbsp;&nbsp; D. farmer</div>
+            <div class="options-group">
+                <label><input type="radio" name="q23" value="A"> A</label>
+                <label><input type="radio" name="q23" value="B"> B</label>
+                <label><input type="radio" name="q23" value="C"> C</label>
+                <label><input type="radio" name="q23" value="D"> D</label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">24. A. creative &nbsp;&nbsp; B. rewarding &nbsp;&nbsp; C. tiring &nbsp;&nbsp; D. mechanic</div>
+            <div class="options-group">
+                <label><input type="radio" name="q24" value="A"> A</label>
+                <label><input type="radio" name="q24" value="B"> B</label>
+                <label><input type="radio" name="q24" value="C"> C</label>
+                <label><input type="radio" name="q24" value="D"> D</label>
+            </div>
+        </div>
+
+        <p class="instruction">Choose the best answer to complete the sentences:</p>
+
+        <div class="question-block">
+            <div class="question-text">25. A _____ helps people when they are sick or injured in an emergency before going to the hospital.</div>
+            <div class="options-group">
+                <label><input type="radio" name="q25" value="A"> A. paramedic</label>
+                <label><input type="radio" name="q25" value="B"> B. pilot</label>
+                <label><input type="radio" name="q25" value="C"> C. architect</label>
+                <label><input type="radio" name="q25" value="D"> D. builder</label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">26. I want to be an _____ so I can design beautiful houses and buildings.</div>
+            <div class="options-group">
+                <label><input type="radio" name="q26" value="A"> A. actor</label>
+                <label><input type="radio" name="q26" value="B"> B. architect</label>
+                <label><input type="radio" name="q26" value="C"> C. assistant</label>
+                <label><input type="radio" name="q26" value="D"> D. waiter</label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">27. A job where you just do the exact same thing every single day is very _____.</div>
+            <div class="options-group">
+                <label><input type="radio" name="q27" value="A"> A. rewarding</label>
+                <label><input type="radio" name="q27" value="B"> B. varied</label>
+                <label><input type="radio" name="q27" value="C"> C. repetitive</label>
+                <label><input type="radio" name="q27" value="D"> D. creative</label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">28. You usually have to wear a _____ if you work as a police officer.</div>
+            <div class="options-group">
+                <label><input type="radio" name="q28" value="A"> A. uniform</label>
+                <label><input type="radio" name="q28" value="B"> B. dress</label>
+                <label><input type="radio" name="q28" value="C"> C. hat</label>
+                <label><input type="radio" name="q28" value="D"> D. glasses</label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">29. To get that job, you need to send in an _____ form by Friday.</div>
+            <div class="options-group">
+                <label><input type="radio" name="q29" value="A"> A. application</label>
+                <label><input type="radio" name="q29" value="B"> B. applicant</label>
+                <label><input type="radio" name="q29" value="C"> C. apply</label>
+                <label><input type="radio" name="q29" value="D"> D. applied</label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">30. I am going to _____ for a part-time job at the new coffee shop.</div>
+            <div class="options-group">
+                <label><input type="radio" name="q30" value="A"> A. work</label>
+                <label><input type="radio" name="q30" value="B"> B. earn</label>
+                <label><input type="radio" name="q30" value="C"> C. apply</label>
+                <label><input type="radio" name="q30" value="D"> D. serve</label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">31. Look at those dark clouds! It _____ heavily.</div>
+            <div class="options-group">
+                <label><input type="radio" name="q31" value="A"> A. will rain</label>
+                <label><input type="radio" name="q31" value="B"> B. is going to rain</label>
+                <label><input type="radio" name="q31" value="C"> C. rains</label>
+                <label><input type="radio" name="q31" value="D"> D. raining</label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">32. I think people _____ live on Mars in the future.</div>
+            <div class="options-group">
+                <label><input type="radio" name="q32" value="A"> A. will</label>
+                <label><input type="radio" name="q32" value="B"> B. are going to</label>
+                <label><input type="radio" name="q32" value="C"> C. do</label>
+                <label><input type="radio" name="q32" value="D"> D. going to</label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">33. If it rains tomorrow, we _____ at home and watch TV.</div>
+            <div class="options-group">
+                <label><input type="radio" name="q33" value="A"> A. stay</label>
+                <label><input type="radio" name="q33" value="B"> B. staying</label>
+                <label><input type="radio" name="q33" value="C"> C. will stay</label>
+                <label><input type="radio" name="q33" value="D"> D. stayed</label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">34. What will you do if you _____ the exam?</div>
+            <div class="options-group">
+                <label><input type="radio" name="q34" value="A"> A. fails</label>
+                <label><input type="radio" name="q34" value="B"> B. will fail</label>
+                <label><input type="radio" name="q34" value="C"> C. failed</label>
+                <label><input type="radio" name="q34" value="D"> D. fail</label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">35. A teacher is a person _____ helps students learn new things.</div>
+            <div class="options-group">
+                <label><input type="radio" name="q35" value="A"> A. which</label>
+                <label><input type="radio" name="q35" value="B"> B. who</label>
+                <label><input type="radio" name="q35" value="C"> C. where</label>
+                <label><input type="radio" name="q35" value="D"> D. whose</label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">36. This is the hospital _____ my mother works as a nurse.</div>
+            <div class="options-group">
+                <label><input type="radio" name="q36" value="A"> A. which</label>
+                <label><input type="radio" name="q36" value="B"> B. who</label>
+                <label><input type="radio" name="q36" value="C"> C. where</label>
+                <label><input type="radio" name="q36" value="D"> D. when</label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">37. The book _____ I bought yesterday is very interesting.</div>
+            <div class="options-group">
+                <label><input type="radio" name="q37" value="A"> A. who</label>
+                <label><input type="radio" name="q37" value="B"> B. where</label>
+                <label><input type="radio" name="q37" value="C"> C. which</label>
+                <label><input type="radio" name="q37" value="D"> D. whom</label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">38. My _____ called me yesterday. We broke up 2 years ago.</div>
+            <div class="options-group">
+                <label><input type="radio" name="q38" value="A"> A. co-worker</label>
+                <label><input type="radio" name="q38" value="B"> B. ex-partner</label>
+                <label><input type="radio" name="q38" value="C"> C. over-worker</label>
+                <label><input type="radio" name="q38" value="D"> D. semi-partner</label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">39. The prefix "_____" means you do something again (e.g., write again).</div>
+            <div class="options-group">
+                <label><input type="radio" name="q39" value="A"> A. re-</label>
+                <label><input type="radio" name="q39" value="B"> B. un-</label>
+                <label><input type="radio" name="q39" value="C"> C. mis-</label>
+                <label><input type="radio" name="q39" value="D"> D. over-</label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">40. A _____ company is a big company that operates in many different countries.</div>
+            <div class="options-group">
+                <label><input type="radio" name="q40" value="A"> A. micro</label>
+                <label><input type="radio" name="q40" value="B"> B. under</label>
+                <label><input type="radio" name="q40" value="C"> C. multinational</label>
+                <label><input type="radio" name="q40" value="D"> D. post</label>
+            </div>
+        </div>
+
+        <h3>UNIT 6: MONEY (Q41 - Q60)</h3>
+        <p class="instruction">Choose the word whose underlined part is pronounced differently:</p>
+
+        <div class="question-block">
+            <div class="question-text">41. A. m<u>o</u>ney &nbsp;&nbsp; B. c<u>o</u>st &nbsp;&nbsp; C. pr<u>o</u>fit &nbsp;&nbsp; D. sh<u>o</u>p</div>
+            <div class="options-group">
+                <label><input type="radio" name="q41" value="A"> A</label>
+                <label><input type="radio" name="q41" value="B"> B</label>
+                <label><input type="radio" name="q41" value="C"> C</label>
+                <label><input type="radio" name="q41" value="D"> D</label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">42. A. b<u>u</u>y &nbsp;&nbsp; B. p<u>a</u>y &nbsp;&nbsp; C. s<u>a</u>ve &nbsp;&nbsp; D. w<u>a</u>ste</div>
+            <div class="options-group">
+                <label><input type="radio" name="q42" value="A"> A</label>
+                <label><input type="radio" name="q42" value="B"> B</label>
+                <label><input type="radio" name="q42" value="C"> C</label>
+                <label><input type="radio" name="q42" value="D"> D</label>
+            </div>
+        </div>
+
+        <p class="instruction">Choose the word that has a different stress pattern:</p>
+
+        <div class="question-block">
+            <div class="question-text">43. A. afford &nbsp;&nbsp; B. borrow &nbsp;&nbsp; C. donate &nbsp;&nbsp; D. exchange</div>
+            <div class="options-group">
+                <label><input type="radio" name="q43" value="A"> A</label>
+                <label><input type="radio" name="q43" value="B"> B</label>
+                <label><input type="radio" name="q43" value="C"> C</label>
+                <label><input type="radio" name="q43" value="D"> D</label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">44. A. receipt &nbsp;&nbsp; B. discount &nbsp;&nbsp; C. profit &nbsp;&nbsp; D. bargain</div>
+            <div class="options-group">
+                <label><input type="radio" name="q44" value="A"> A</label>
+                <label><input type="radio" name="q44" value="B"> B</label>
+                <label><input type="radio" name="q44" value="C"> C</label>
+                <label><input type="radio" name="q44" value="D"> D</label>
+            </div>
+        </div>
+
+        <p class="instruction">Choose the best answer to complete the sentences:</p>
+
+        <div class="question-block">
+            <div class="question-text">45. I bought this delicious bread at the _____ near my house.</div>
+            <div class="options-group">
+                <label><input type="radio" name="q45" value="A"> A. baker's</label>
+                <label><input type="radio" name="q45" value="B"> B. butcher's</label>
+                <label><input type="radio" name="q45" value="C"> C. florist's</label>
+                <label><input type="radio" name="q45" value="D"> D. chemist's</label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">46. You can buy medicine and vitamins at the _____.</div>
+            <div class="options-group">
+                <label><input type="radio" name="q46" value="A"> A. DIY store</label>
+                <label><input type="radio" name="q46" value="B"> B. post office</label>
+                <label><input type="radio" name="q46" value="C"> C. chemist's</label>
+                <label><input type="radio" name="q46" value="D"> D. jeweller's</label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">47. This jacket was a real _____. It only cost 100,000 VND!</div>
+            <div class="options-group">
+                <label><input type="radio" name="q47" value="A"> A. bargain</label>
+                <label><input type="radio" name="q47" value="B"> B. price</label>
+                <label><input type="radio" name="q47" value="C"> C. tag</label>
+                <label><input type="radio" name="q47" value="D"> D. receipt</label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">48. Can you _____ me some money? I forgot my wallet at home.</div>
+            <div class="options-group">
+                <label><input type="radio" name="q48" value="A"> A. borrow</label>
+                <label><input type="radio" name="q48" value="B"> B. lend</label>
+                <label><input type="radio" name="q48" value="C"> C. pay</label>
+                <label><input type="radio" name="q48" value="D"> D. cost</label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">49. I can't _____ to buy a new smartphone. It's too expensive for me.</div>
+            <div class="options-group">
+                <label><input type="radio" name="q49" value="A"> A. charge</label>
+                <label><input type="radio" name="q49" value="B"> B. save</label>
+                <label><input type="radio" name="q49" value="C"> C. afford</label>
+                <label><input type="radio" name="q49" value="D"> D. waste</label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">50. If the shoes don't fit, you can take them back to the shop and ask for a _____.</div>
+            <div class="options-group">
+                <label><input type="radio" name="q50" value="A"> A. discount</label>
+                <label><input type="radio" name="q50" value="B"> B. refund</label>
+                <label><input type="radio" name="q50" value="C"> C. receipt</label>
+                <label><input type="radio" name="q50" value="D"> D. offer</label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">51. If I _____ a million dollars, I would travel around the world.</div>
+            <div class="options-group">
+                <label><input type="radio" name="q51" value="A"> A. have</label>
+                <label><input type="radio" name="q51" value="B"> B. had</label>
+                <label><input type="radio" name="q51" value="C"> C. will have</label>
+                <label><input type="radio" name="q51" value="D"> D. am having</label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">52. What would you do if you _____ a ghost in your room?</div>
+            <div class="options-group">
+                <label><input type="radio" name="q52" value="A"> A. see</label>
+                <label><input type="radio" name="q52" value="B"> B. will see</label>
+                <label><input type="radio" name="q52" value="C"> C. saw</label>
+                <label><input type="radio" name="q52" value="D"> D. had seen</label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">53. She wouldn't be so tired if she _____ to bed earlier.</div>
+            <div class="options-group">
+                <label><input type="radio" name="q53" value="A"> A. goes</label>
+                <label><input type="radio" name="q53" value="B"> B. went</label>
+                <label><input type="radio" name="q53" value="C"> C. go</label>
+                <label><input type="radio" name="q53" value="D"> D. is going</label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">54. When I arrived at the cinema, the film _____.</div>
+            <div class="options-group">
+                <label><input type="radio" name="q54" value="A"> A. starts</label>
+                <label><input type="radio" name="q54" value="B"> B. started</label>
+                <label><input type="radio" name="q54" value="C"> C. had started</label>
+                <label><input type="radio" name="q54" value="D"> D. has started</label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">55. After he _____ his dinner, he watched his favorite TV show.</div>
+            <div class="options-group">
+                <label><input type="radio" name="q55" value="A"> A. had eaten</label>
+                <label><input type="radio" name="q55" value="B"> B. eats</label>
+                <label><input type="radio" name="q55" value="C"> C. eat</label>
+                <label><input type="radio" name="q55" value="D"> D. is eating</label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">56. I couldn't buy the shirt because I _____ my money at home.</div>
+            <div class="options-group">
+                <label><input type="radio" name="q56" value="A"> A. leave</label>
+                <label><input type="radio" name="q56" value="B"> B. left</label>
+                <label><input type="radio" name="q56" value="C"> C. had left</label>
+                <label><input type="radio" name="q56" value="D"> D. was leaving</label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">57. You should avoid _____ too much fast food if you want to be healthy.</div>
+            <div class="options-group">
+                <label><input type="radio" name="q57" value="A"> A. to eat</label>
+                <label><input type="radio" name="q57" value="B"> B. eating</label>
+                <label><input type="radio" name="q57" value="C"> C. eat</label>
+                <label><input type="radio" name="q57" value="D"> D. eaten</label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">58. My parents usually let me _____ out late on Saturday nights.</div>
+            <div class="options-group">
+                <label><input type="radio" name="q58" value="A"> A. to stay</label>
+                <label><input type="radio" name="q58" value="B"> B. staying</label>
+                <label><input type="radio" name="q58" value="C"> C. stay</label>
+                <label><input type="radio" name="q58" value="D"> D. stayed</label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">59. The little boy refused _____ his vegetables.</div>
+            <div class="options-group">
+                <label><input type="radio" name="q59" value="A"> A. to eat</label>
+                <label><input type="radio" name="q59" value="B"> B. eating</label>
+                <label><input type="radio" name="q59" value="C"> C. eat</label>
+                <label><input type="radio" name="q59" value="D"> D. ate</label>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">60. I am trying to save _____ some pocket money to buy a new bicycle.</div>
+            <div class="options-group">
+                <label><input type="radio" name="q60" value="A"> A. in</label>
+                <label><input type="radio" name="q60" value="B"> B. down</label>
+                <label><input type="radio" name="q60" value="C"> C. up</label>
+                <label><input type="radio" name="q60" value="D"> D. on</label>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>PART II: READING</h2>
+        <h3>Task 1: Read the text and choose the best word (A, B, C, or D) for each blank.</h3>
+        
+        <p class="instruction">Cloze Test 1 (Unit 4 - Our Planet)</p>
+        <div class="reading-passage">
+            Global warming is a serious (1) _____ for our planet today. The Earth's temperature is rising quickly because of greenhouse (2) _____ in the air. This heat causes the ice (3) _____ in the Arctic to melt, making sea levels go up. Furthermore, extreme (4) _____ events like big storms, floods, and droughts are becoming more common. To save the Earth, we must stop cutting (5) _____ trees in the forests and start using (6) _____ energy like solar power and wind power.
+        </div>
+        
+        <div class="question-block">
+            <div class="question-text">1.</div>
+            <div class="options-group">
+                <label><input type="radio" name="c1_1" value="A"> A. problem</label>
+                <label><input type="radio" name="c1_1" value="B"> B. idea</label>
+                <label><input type="radio" name="c1_1" value="C"> C. mistake</label>
+                <label><input type="radio" name="c1_1" value="D"> D. success</label>
+            </div>
+        </div>
+        <div class="question-block">
+            <div class="question-text">2.</div>
+            <div class="options-group">
+                <label><input type="radio" name="c1_2" value="A"> A. waters</label>
+                <label><input type="radio" name="c1_2" value="B"> B. gases</label>
+                <label><input type="radio" name="c1_2" value="C"> C. winds</label>
+                <label><input type="radio" name="c1_2" value="D"> D. lands</label>
+            </div>
+        </div>
+        <div class="question-block">
+            <div class="question-text">3.</div>
+            <div class="options-group">
+                <label><input type="radio" name="c1_3" value="A"> A. caps</label>
+                <label><input type="radio" name="c1_3" value="B"> B. hats</label>
+                <label><input type="radio" name="c1_3" value="C"> C. tops</label>
+                <label><input type="radio" name="c1_3" value="D"> D. covers</label>
+            </div>
+        </div>
+        <div class="question-block">
+            <div class="question-text">4.</div>
+            <div class="options-group">
+                <label><input type="radio" name="c1_4" value="A"> A. weather</label>
+                <label><input type="radio" name="c1_4" value="B"> B. climate</label>
+                <label><input type="radio" name="c1_4" value="C"> C. time</label>
+                <label><input type="radio" name="c1_4" value="D"> D. season</label>
+            </div>
+        </div>
+        <div class="question-block">
+            <div class="question-text">5.</div>
+            <div class="options-group">
+                <label><input type="radio" name="c1_5" value="A"> A. up</label>
+                <label><input type="radio" name="c1_5" value="B"> B. off</label>
+                <label><input type="radio" name="c1_5" value="C"> C. down</label>
+                <label><input type="radio" name="c1_5" value="D"> D. out</label>
+            </div>
+        </div>
+        <div class="question-block">
+            <div class="question-text">6.</div>
+            <div class="options-group">
+                <label><input type="radio" name="c1_6" value="A"> A. fossil</label>
+                <label><input type="radio" name="c1_6" value="B"> B. dirty</label>
+                <label><input type="radio" name="c1_6" value="C"> C. dark</label>
+                <label><input type="radio" name="c1_6" value="D"> D. renewable</label>
+            </div>
+        </div>
+
+        <p class="instruction">Cloze Test 2 (Unit 5 - Ambition)</p>
+        <div class="reading-passage">
+            Finding the right career can be (1) _____, but it is very important. Some people only want a job that is highly paid so they can earn a lot of (2) _____. However, others prefer a (3) _____ job that makes them feel happy and useful, for example working as a nurse or a sports (4) _____. Before you apply (5) _____ a job, make sure you write a good CV to show your skills. Don't worry if you don't succeed at first, keep trying and you will surely find a great (6) _____ in the future!
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">1.</div>
+            <div class="options-group">
+                <label><input type="radio" name="c2_1" value="A"> A. easy</label>
+                <label><input type="radio" name="c2_1" value="B"> B. challenging</label>
+                <label><input type="radio" name="c2_1" value="C"> C. boring</label>
+                <label><input type="radio" name="c2_1" value="D"> D. lazy</label>
+            </div>
+        </div>
+        <div class="question-block">
+            <div class="question-text">2.</div>
+            <div class="options-group">
+                <label><input type="radio" name="c2_2" value="A"> A. money</label>
+                <label><input type="radio" name="c2_2" value="B"> B. time</label>
+                <label><input type="radio" name="c2_2" value="C"> C. friends</label>
+                <label><input type="radio" name="c2_2" value="D"> D. uniforms</label>
+            </div>
+        </div>
+        <div class="question-block">
+            <div class="question-text">3.</div>
+            <div class="options-group">
+                <label><input type="radio" name="c2_3" value="A"> A. terrible</label>
+                <label><input type="radio" name="c2_3" value="B"> B. tiring</label>
+                <label><input type="radio" name="c2_3" value="C"> C. rewarding</label>
+                <label><input type="radio" name="c2_3" value="D"> D. stressful</label>
+            </div>
+        </div>
+        <div class="question-block">
+            <div class="question-text">4.</div>
+            <div class="options-group">
+                <label><input type="radio" name="c2_4" value="A"> A. coach</label>
+                <label><input type="radio" name="c2_4" value="B"> B. patient</label>
+                <label><input type="radio" name="c2_4" value="C"> C. animal</label>
+                <label><input type="radio" name="c2_4" value="D"> D. building</label>
+            </div>
+        </div>
+        <div class="question-block">
+            <div class="question-text">5.</div>
+            <div class="options-group">
+                <label><input type="radio" name="c2_5" value="A"> A. to</label>
+                <label><input type="radio" name="c2_5" value="B"> B. with</label>
+                <label><input type="radio" name="c2_5" value="C"> C. for</label>
+                <label><input type="radio" name="c2_5" value="D"> D. in</label>
+            </div>
+        </div>
+        <div class="question-block">
+            <div class="question-text">6.</div>
+            <div class="options-group">
+                <label><input type="radio" name="c2_6" value="A"> A. hobby</label>
+                <label><input type="radio" name="c2_6" value="B"> B. job</label>
+                <label><input type="radio" name="c2_6" value="C"> C. game</label>
+                <label><input type="radio" name="c2_6" value="D"> D. sport</label>
+            </div>
+        </div>
+
+        <p class="instruction">Cloze Test 3 (Unit 6 - Money)</p>
+        <div class="reading-passage">
+            When you go (1) _____, it is very easy to spend too much money if you are not careful. To avoid wasting money, you should always look at the price (2) _____ before buying anything. You should also keep an eye out for special (3) _____ or big discounts in the store. If you buy a shirt and it is torn, don't forget to keep the (4) _____ so you can easily get a (5) _____ from the cashier. Finally, it is always a good idea to (6) _____ up some money every month for the future.
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">1.</div>
+            <div class="options-group">
+                <label><input type="radio" name="c3_1" value="A"> A. sleeping</label>
+                <label><input type="radio" name="c3_1" value="B"> B. shopping</label>
+                <label><input type="radio" name="c3_1" value="C"> C. running</label>
+                <label><input type="radio" name="c3_1" value="D"> D. reading</label>
+            </div>
+        </div>
+        <div class="question-block">
+            <div class="question-text">2.</div>
+            <div class="options-group">
+                <label><input type="radio" name="c3_2" value="A"> A. tag</label>
+                <label><input type="radio" name="c3_2" value="B"> B. name</label>
+                <label><input type="radio" name="c3_2" value="C"> C. paper</label>
+                <label><input type="radio" name="c3_2" value="D"> D. bag</label>
+            </div>
+        </div>
+        <div class="question-block">
+            <div class="question-text">3.</div>
+            <div class="options-group">
+                <label><input type="radio" name="c3_3" value="A"> A. offers</label>
+                <label><input type="radio" name="c3_3" value="B"> B. gifts</label>
+                <label><input type="radio" name="c3_3" value="C"> C. works</label>
+                <label><input type="radio" name="c3_3" value="D"> D. jobs</label>
+            </div>
+        </div>
+        <div class="question-block">
+            <div class="question-text">4.</div>
+            <div class="options-group">
+                <label><input type="radio" name="c3_4" value="A"> A. ticket</label>
+                <label><input type="radio" name="c3_4" value="B"> B. money</label>
+                <label><input type="radio" name="c3_4" value="C"> C. receipt</label>
+                <label><input type="radio" name="c3_4" value="D"> D. note</label>
+            </div>
+        </div>
+        <div class="question-block">
+            <div class="question-text">5.</div>
+            <div class="options-group">
+                <label><input type="radio" name="c3_5" value="A"> A. fund</label>
+                <label><input type="radio" name="c3_5" value="B"> B. refund</label>
+                <label><input type="radio" name="c3_5" value="C"> C. profit</label>
+                <label><input type="radio" name="c3_5" value="D"> D. borrow</label>
+            </div>
+        </div>
+        <div class="question-block">
+            <div class="question-text">6.</div>
+            <div class="options-group">
+                <label><input type="radio" name="c3_6" value="A"> A. give</label>
+                <label><input type="radio" name="c3_6" value="B"> B. save</label>
+                <label><input type="radio" name="c3_6" value="C"> C. take</label>
+                <label><input type="radio" name="c3_6" value="D"> D. spend</label>
+            </div>
+        </div>
+
+        <h3>Task 2: Reading Comprehension</h3>
+        <p class="instruction">Read the passage and choose the correct answer for each question.</p>
+        <div class="reading-passage">
+            Sarah is a 17-year-old student who has a big ambition. Last year, she wanted to earn some pocket money, so she started a small online business. She buys old, second-hand clothes from charity shops, washes them, fixes them, and then sells them on the internet.<br><br>
+            This business is not only good for Sarah but also very good for the environment. By reusing old clothes, she helps reduce waste and pollution, which is great for our planet. Sarah says her job is very creative and rewarding because she loves designing new styles from old things.<br><br>
+            Now, her online shop is very popular, and she makes a good profit every month. Next year, when she finishes high school, she is going to open a real clothes shop in her town.
+        </div>
+
+        <div class="question-block">
+            <div class="question-text">1. What is the main idea of the text?</div>
+            <div class="options-group">
+                <label><input type="radio" name="rc1" value="A"> A. A girl who buys new clothes.</label>
+                <label><input type="radio" name="rc1" value="B"> B. A teenager with a successful and eco-friendly business.</label>
+                <label><input type="radio" name="rc1" value="C"> C. The bad effects of pollution on the planet.</label>
+                <label><input type="radio" name="rc1" value="D"> D. How to apply for a job in a clothes shop.</label>
+            </div>
+        </div>
+        <div class="question-block">
+            <div class="question-text">2. Where does Sarah buy the old clothes?</div>
+            <div class="options-group">
+                <label><input type="radio" name="rc2" value="A"> A. From the internet</label>
+                <label><input type="radio" name="rc2" value="B"> B. From a supermarket</label>
+                <label><input type="radio" name="rc2" value="C"> C. From charity shops</label>
+                <label><input type="radio" name="rc2" value="D"> D. From her school</label>
+            </div>
+        </div>
+        <div class="question-block">
+            <div class="question-text">3. Why is Sarah's business good for the environment?</div>
+            <div class="options-group">
+                <label><input type="radio" name="rc3" value="A"> A. Because it uses a lot of water.</label>
+                <label><input type="radio" name="rc3" value="B"> B. Because it reduces waste and pollution.</label>
+                <label><input type="radio" name="rc3" value="C"> C. Because she plants trees.</label>
+                <label><input type="radio" name="rc3" value="D"> D. Because she uses solar energy.</label>
+            </div>
+        </div>
+        <div class="question-block">
+            <div class="question-text">4. How does Sarah feel about her job?</div>
+            <div class="options-group">
+                <label><input type="radio" name="rc4" value="A"> A. It is stressful and tiring.</label>
+                <label><input type="radio" name="rc4" value="B"> B. It is boring and repetitive.</label>
+                <label><input type="radio" name="rc4" value="C"> C. It is creative and rewarding.</label>
+                <label><input type="radio" name="rc4" value="D"> D. It is dangerous.</label>
+            </div>
+        </div>
+        <div class="question-block">
+            <div class="question-text">5. What does the word "them" in paragraph 1 refer to?</div>
+            <div class="options-group">
+                <label><input type="radio" name="rc5" value="A"> A. charity shops</label>
+                <label><input type="radio" name="rc5" value="B"> B. second-hand clothes</label>
+                <label><input type="radio" name="rc5" value="C"> C. the internet</label>
+                <label><input type="radio" name="rc5" value="D"> D. pocket money</label>
+            </div>
+        </div>
+        <div class="question-block">
+            <div class="question-text">6. What does Sarah do with the clothes before selling them?</div>
+            <div class="options-group">
+                <label><input type="radio" name="rc6" value="A"> A. She throws them away.</label>
+                <label><input type="radio" name="rc6" value="B"> B. She washes and fixes them.</label>
+                <label><input type="radio" name="rc6" value="C"> C. She burns them.</label>
+                <label><input type="radio" name="rc6" value="D"> D. She gives them to her friends.</label>
+            </div>
+        </div>
+        <div class="question-block">
+            <div class="question-text">7. What is Sarah's plan for next year?</div>
+            <div class="options-group">
+                <label><input type="radio" name="rc7" value="A"> A. She is going to open a real clothes shop.</label>
+                <label><input type="radio" name="rc7" value="B"> B. She will stop selling clothes.</label>
+                <label><input type="radio" name="rc7" value="C"> C. She is going to travel around the world.</label>
+                <label><input type="radio" name="rc7" value="D"> D. She is going to university.</label>
+            </div>
+        </div>
+        <div class="question-block">
+            <div class="question-text">8. Which word in the text has the closest meaning to "money gained/earned"?</div>
+            <div class="options-group">
+                <label><input type="radio" name="rc8" value="A"> A. ambition</label>
+                <label><input type="radio" name="rc8" value="B"> B. profit</label>
+                <label><input type="radio" name="rc8" value="C"> C. waste</label>
+                <label><input type="radio" name="rc8" value="D"> D. environment</label>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>PART III: WRITING</h2>
+        
+        <h3>Task 1: Give the correct form of the word in brackets (Word Form)</h3>
+        
+        <p class="instruction">UNIT 4</p>
+        <div class="question-block">
+            <div class="question-text">1. The (sun) __________ is shining brightly today. Let's go to the beach!</div>
+            <input type="text" class="writing-input" placeholder="Your answer...">
+        </div>
+        <div class="question-block">
+            <div class="question-text">2. There was a terrible and (storm) __________ night with lots of thunder.</div>
+            <input type="text" class="writing-input" placeholder="Your answer...">
+        </div>
+        <div class="question-block">
+            <div class="question-text">3. The river near my house is heavily (pollute) __________ by plastic bags.</div>
+            <input type="text" class="writing-input" placeholder="Your answer...">
+        </div>
+        <div class="question-block">
+            <div class="question-text">4. (Globe) __________ warming is a very big issue for our Earth.</div>
+            <input type="text" class="writing-input" placeholder="Your answer...">
+        </div>
+        <div class="question-block">
+            <div class="question-text">5. Many wild animals are in (danger) __________ of dying out.</div>
+            <input type="text" class="writing-input" placeholder="Your answer...">
+        </div>
+        <div class="question-block">
+            <div class="question-text">6. Wear a thick coat! It is (freeze) __________ cold outside!</div>
+            <input type="text" class="writing-input" placeholder="Your answer...">
+        </div>
+        <div class="question-block">
+            <div class="question-text">7. We must take action to protect our (environ) __________.</div>
+            <input type="text" class="writing-input" placeholder="Your answer...">
+        </div>
+        <div class="question-block">
+            <div class="question-text">8. The earthquake last week was completely (disaster) __________.</div>
+            <input type="text" class="writing-input" placeholder="Your answer...">
+        </div>
+
+        <p class="instruction">UNIT 5</p>
+        <div class="question-block">
+            <div class="question-text">9. My brother works as a famous (act) __________ in movies.</div>
+            <input type="text" class="writing-input" placeholder="Your answer...">
+        </div>
+        <div class="question-block">
+            <div class="question-text">10. She is very (create) __________; she can draw and design beautiful clothes.</div>
+            <input type="text" class="writing-input" placeholder="Your answer...">
+        </div>
+        <div class="question-block">
+            <div class="question-text">11. The manager's job was too (stress) __________, so he decided to quit.</div>
+            <input type="text" class="writing-input" placeholder="Your answer...">
+        </div>
+        <div class="question-block">
+            <div class="question-text">12. He works as a shop (assist) __________ in a big supermarket.</div>
+            <input type="text" class="writing-input" placeholder="Your answer...">
+        </div>
+        <div class="question-block">
+            <div class="question-text">13. My uncle is a (farm) __________. He grows vegetables and feeds animals.</div>
+            <input type="text" class="writing-input" placeholder="Your answer...">
+        </div>
+        <div class="question-block">
+            <div class="question-text">14. Solving this math problem is a very (challenge) __________ task.</div>
+            <input type="text" class="writing-input" placeholder="Your answer...">
+        </div>
+        <div class="question-block">
+            <div class="question-text">15. Many students are looking for (employ) __________ after they finish university.</div>
+            <input type="text" class="writing-input" placeholder="Your answer...">
+        </div>
+        <div class="question-block">
+            <div class="question-text">16. The (build) __________ finished constructing the house in just 3 months.</div>
+            <input type="text" class="writing-input" placeholder="Your answer...">
+        </div>
+
+        <p class="instruction">UNIT 6</p>
+        <div class="question-block">
+            <div class="question-text">17. I went to the (bake) __________ to buy some fresh bread for breakfast.</div>
+            <input type="text" class="writing-input" placeholder="Your answer...">
+        </div>
+        <div class="question-block">
+            <div class="question-text">18. The clothes in this shop are very (afford) __________. Anyone can buy them.</div>
+            <input type="text" class="writing-input" placeholder="Your answer...">
+        </div>
+        <div class="question-block">
+            <div class="question-text">19. Thank you very much for your generous (donate) __________ to the charity.</div>
+            <input type="text" class="writing-input" placeholder="Your answer...">
+        </div>
+        <div class="question-block">
+            <div class="question-text">20. He is a famous (invest) __________ who puts money into many new companies.</div>
+            <input type="text" class="writing-input" placeholder="Your answer...">
+        </div>
+        <div class="question-block">
+            <div class="question-text">21. You can make a (pay) __________ by cash or by credit card.</div>
+            <input type="text" class="writing-input" placeholder="Your answer...">
+        </div>
+        <div class="question-block">
+            <div class="question-text">22. My grandmother gave me this watch. It is very (value) __________ to me.</div>
+            <input type="text" class="writing-input" placeholder="Your answer...">
+        </div>
+        <div class="question-block">
+            <div class="question-text">23. Always ask the cashier for a (receive) __________ after you pay for your items.</div>
+            <input type="text" class="writing-input" placeholder="Your answer...">
+        </div>
+        <div class="question-block">
+            <div class="question-text">24. We bought this television at a big (count) __________ during the Black Friday sale.</div>
+            <input type="text" class="writing-input" placeholder="Your answer...">
+        </div>
+
+        <h3>Task 2: Rewrite the sentences without changing their original meanings</h3>
+        
+        <p class="instruction">UNIT 4</p>
+        <div class="question-block">
+            <div class="question-text">1. No river in the world is longer than the Nile.</div>
+            <div>The Nile is the <input type="text" class="writing-input" placeholder="..."></div>
+        </div>
+        <div class="question-block">
+            <div class="question-text">2. The coffee is so hot that I can't drink it.</div>
+            <div>The coffee is too <input type="text" class="writing-input" placeholder="..."></div>
+        </div>
+        <div class="question-block">
+            <div class="question-text">3. Mount Everest is higher than K2.</div>
+            <div>K2 is not as <input type="text" class="writing-input" placeholder="..."></div>
+        </div>
+        <div class="question-block">
+            <div class="question-text">4. The house isn't large enough for our big family to live in.</div>
+            <div>The house is too <input type="text" class="writing-input" placeholder="..."></div>
+        </div>
+
+        <p class="instruction">UNIT 5</p>
+        <div class="question-block">
+            <div class="question-text">5. Hurry up, or you will miss the school bus.</div>
+            <div>If you don't <input type="text" class="writing-input" placeholder="..."></div>
+        </div>
+        <div class="question-block">
+            <div class="question-text">6. We have a plan to travel to Da Lat next weekend.</div>
+            <div>We are <input type="text" class="writing-input" placeholder="..."></div>
+        </div>
+        <div class="question-block">
+            <div class="question-text">7. The girl is my sister. She is wearing a beautiful red dress.</div>
+            <div>The girl who <input type="text" class="writing-input" placeholder="..."></div>
+        </div>
+        <div class="question-block">
+            <div class="question-text">8. This is the office. My father works here every day.</div>
+            <div>This is the office where <input type="text" class="writing-input" placeholder="..."></div>
+        </div>
+
+        <p class="instruction">UNIT 6</p>
+        <div class="question-block">
+            <div class="question-text">9. I don't know the answer, so I can't tell you.</div>
+            <div>If I knew <input type="text" class="writing-input" placeholder="..."></div>
+        </div>
+        <div class="question-block">
+            <div class="question-text">10. First, she did all her homework. Then, she watched TV.</div>
+            <div>After she had <input type="text" class="writing-input" placeholder="..."></div>
+        </div>
+        <div class="question-block">
+            <div class="question-text">11. I am not a bird, so I can't fly in the sky.</div>
+            <div>If I were <input type="text" class="writing-input" placeholder="..."></div>
+        </div>
+        <div class="question-block">
+            <div class="question-text">12. He parked his car, then he went into the building.</div>
+            <div>Before he went <input type="text" class="writing-input" placeholder="..."></div>
+        </div>
+    </div>
+</div>
+
+
+        <button id="submit-btn" onclick="submitTest(false)">NỘP BÀI</button>
+    </div>
+
+    <script>
+        let timeLimit = 150 * 60; // 150 phút
+        let timerInterval;
+        let violations = 0;
+        const maxViolations = 3;
+        let testActive = false;
+        let isExamLocked = false; 
+        const activityLog = [];
+
+        // Chống F12, Ctrl+C, Ctrl+P...
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'F12' || 
+               (e.ctrlKey && e.shiftKey && e.key === 'I') || 
+               (e.ctrlKey && e.key === 'c') ||
+               (e.ctrlKey && e.key === 'p')) {
+                e.preventDefault();
+                logActivity("CỐ TÌNH", "Thí sinh cố gắng dùng phím tắt bị cấm (F12/Copy/Print).");
+            }
+        });
+
+        // Hàm bắt đầu thi
+        function startTest() {
+            const name = document.getElementById('studentName').value.trim();
+            const className = document.getElementById('studentClass').value.trim();
+
+            if(name === "" || className === "") {
+                alert("Yêu cầu nhập đủ Họ Tên và Lớp!");
+                return;
+            }
+
+            logActivity("SYSTEM", "Bắt đầu làm bài. Thí sinh: " + name + " - " + className);
+
+            document.getElementById('start-screen').style.display = 'none';
+            document.getElementById('test-container').style.display = 'block';
+            document.getElementById('header-bar').style.display = 'flex';
+            document.getElementById('display-name').innerText = name + " (" + className + ")";
+
+            // Ép toàn màn hình
+            requestFullScreen();
+
+            testActive = true;
+            startTimer();
+            monitorRadioClicks();
+        }
+
+        // Ép toàn màn hình bằng hàm chuẩn
+        function requestFullScreen() {
+            let elem = document.documentElement;
+            if (elem.requestFullscreen) { elem.requestFullscreen().catch(err => console.log(err)); }
+            else if (elem.webkitRequestFullscreen) { elem.webkitRequestFullscreen(); } // Safari
+            else if (elem.msRequestFullscreen) { elem.msRequestFullscreen(); } // IE11
+        }
+
+        // HÀM KHÓA BÀI THI KHI PHÁT HIỆN GIAN LẬN
+        function lockExam(reason) {
+            if(!testActive || isExamLocked) return;
+            isExamLocked = true;
+            violations++;
+            
+            // Cập nhật số đếm giao diện
+            document.getElementById('violation-count').innerText = violations;
+            document.getElementById('blocker-violation-count').innerText = violations;
+            document.getElementById('cheat-reason').innerText = "Nguyên nhân: " + reason;
+            
+            logActivity("VI PHẠM LẦN " + violations, reason);
+            
+            if(violations >= maxViolations) {
+                document.getElementById('cheat-blocker').innerHTML = "<h1 style='font-size:4rem'>BÀI THI BỊ HỦY!</h1><h2>Em đã vi phạm quá 3 lần. Hệ thống đang thu bài tự động...</h2>";
+                document.getElementById('cheat-blocker').style.display = 'flex';
+                logActivity("HỆ THỐNG", "HỦY BÀI do vi phạm quá 3 lần.");
+                setTimeout(() => submitTest(true), 2000); // 2 giây sau tự nộp
+                return;
+            }
+            
+            // Hiển thị màng đỏ phong tỏa toàn bộ màn hình
+            document.getElementById('cheat-blocker').style.display = 'flex';
+        }
+
+        // HÀM MỞ KHÓA KHI HỌC SINH CHẤP NHẬN QUAY LẠI
+        function resumeExam() {
+            let elem = document.documentElement;
+            // Bắt buộc trình duyệt vào lại full screen qua thao tác click
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen().then(() => {
+                    document.getElementById('cheat-blocker').style.display = 'none';
+                    isExamLocked = false;
+                    logActivity("HỆ THỐNG", "Thí sinh đã click quay lại toàn màn hình và tiếp tục.");
+                }).catch(err => {
+                    alert("Trình duyệt từ chối. Hãy ấn lại lần nữa!");
+                });
+            }
+        }
+
+        // LƯỚI QUÉT 1: Bắt Alt+Tab hoặc click sang cửa sổ khác (Mất tiêu điểm)
+        window.addEventListener('blur', () => {
+            if(testActive) { lockExam("Mất tiêu điểm (Dùng Alt+Tab, mở ứng dụng khác, hoặc click ra ngoài cửa sổ thi)."); }
+        });
+
+        // LƯỚI QUÉT 2: Bắt hành vi thu nhỏ trình duyệt hoặc đổi Tab trên cùng cửa sổ
+        document.addEventListener('visibilitychange', () => {
+            if(testActive && document.visibilityState === 'hidden') {
+                lockExam("Chuyển Tab trình duyệt hoặc ẩn cửa sổ trình duyệt xuống thanh Taskbar.");
+            }
+        });
+
+        // LƯỚI QUÉT 3: Bắt hành vi nhấn ESC thoát toàn màn hình
+        document.addEventListener('fullscreenchange', () => {
+            if(testActive && !document.fullscreenElement && !isExamLocked) {
+                lockExam("Tự ý nhấn nút thoát chế độ Toàn Màn Hình.");
+            }
+        });
+
+        function startTimer() {
+            const timerDisplay = document.getElementById('timer');
+            timerInterval = setInterval(() => {
+                if(timeLimit <= 0) {
+                    clearInterval(timerInterval);
+                    logActivity("HỆ THỐNG", "Hết thời gian 150 phút. Đóng băng và thu bài.");
+                    submitTest(true);
+                    return;
+                }
+                timeLimit--;
+                let minutes = Math.floor(timeLimit / 60);
+                let seconds = timeLimit % 60;
+                timerDisplay.innerText = `Thời gian: ${minutes}:${seconds < 10 ? '0'+seconds : seconds}`;
+            }, 1000);
+        }
+
+        function monitorRadioClicks() {
+            const radios = document.querySelectorAll('input[type=radio]');
+            radios.forEach(radio => {
+                radio.addEventListener('change', function(e) {
+                    const qName = e.target.name;
+                    const val = e.target.value;
+                    logActivity("CHỌN ĐÁP ÁN", `Câu ${qName.replace('Q','')} -> ${val}`);
+                });
+            });
+        }
+
+        function logActivity(type, message) {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('vi-VN');
+            activityLog.push(`[${timeString}] [${type}] ${message}`);
+        }
+
+        function submitTest(isForce = false) {
+            if (!isForce) {
+                let confirmSubmit = confirm("Em đã kiểm tra kỹ chưa? Đồng ý nộp bài?");
+                if (!confirmSubmit) return;
+                logActivity("HỆ THỐNG", "Thí sinh tự nguyện nộp bài.");
+            }
+            
+            testActive = false;
+            clearInterval(timerInterval);
+
+            // Gom đáp án
+            let finalAnswers = "ĐÁP ÁN CUỐI CÙNG:\n";
+            const questions = new Set([...document.querySelectorAll('input[type=radio]')].map(el => el.name));
+            questions.forEach(q => {
+                const checked = document.querySelector(`input[name="${q}"]:checked`);
+                finalAnswers += `Câu ${q.replace('Q','')}: ${checked ? checked.value : 'Chưa chọn'}\n`;
+            });
+
+            // Lập báo cáo
+            let reportContent = "=== BÁO CÁO GIÁM SÁT THI TRỰC TUYẾN ===\n\n";
+            reportContent += "Họ và Tên: " + document.getElementById('studentName').value + "\n";
+            reportContent += "Lớp: " + document.getElementById('studentClass').value + "\n";
+            reportContent += "TỔNG SỐ LẦN GIAN LẬN: " + violations + "/3\n";
+            reportContent += "Thời gian còn dư: " + Math.floor(timeLimit / 60) + " phút " + (timeLimit % 60) + " giây\n";
+            reportContent += "---------------------------\n\n";
+            reportContent += finalAnswers + "\n";
+            reportContent += "---------------------------\n";
+            reportContent += "LỊCH SỬ GIÁM SÁT HÀNH VI (TỪNG GIÂY):\n";
+            reportContent += activityLog.join("\n");
+
+            // Tải file về máy
+            const blob = new Blob([reportContent], { type: 'text/plain;charset=utf-8' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `BaiThi_${document.getElementById('studentClass').value}_${document.getElementById('studentName').value}.txt`;
+            link.click();
+
+            // Màn hình kết thúc
+            document.body.innerHTML = "<div style='display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; background:#2ecc71; color:white; padding:20px; text-align:center;'><h1 style='font-size:3rem'>ĐÃ NỘP BÀI THÀNH CÔNG!</h1><h2 style='max-width:800px;'>Hãy kiểm tra thư mục 'Downloads' trên máy để lấy file kết quả dạng .txt và nộp lại cho giáo viên của em.</h2></div>";
+        }
+    </script>
+</body>
+</html>
