@@ -1389,7 +1389,8 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
             
             document.getElementById('submit-btn').style.display = 'none';
-            document.getElementById('detailed-explanations').style.display = 'block';
+            // Đã comment dòng gây lỗi do thiếu HTML element:
+            // document.getElementById('detailed-explanations').style.display = 'block'; 
 
             // Soạn Mail Báo Cáo
             let reportContent = "=== BÁO CÁO GIÁM SÁT THI TRỰC TUYẾN ===\n\n";
@@ -1411,7 +1412,8 @@
                     "Accept": "application/json"
                 },
                 body: JSON.stringify({
-                    access_key: "8f705510-1c71-4183-88e5-a9f1b54c0251", // MÃ BẢO MẬT CỦA EM
+                    access_key: "8f705510-1c71-4183-88e5-a9f1b54c0251", // MÃ BẢO MẬT GIỮ NGUYÊN
+                    email: "bot-hethong@thitructuyen.com", // <-- Đã bổ sung trường email để tránh bị API từ chối
                     subject: `[Điểm: ${finalScore}] Lớp ${document.getElementById('studentClass').value} - ${document.getElementById('studentName').value}`,
                     from_name: "Hệ Thống Thi Trực Tuyến",
                     message: reportContent.replace(/\n/g, "<br>") // Chuyển xuống dòng chuẩn cho Email
@@ -1425,7 +1427,8 @@
                 }
             })
             .catch(error => {
-                console.log(error);
+                console.log("Lỗi gửi mail: ", error);
+                alert("Đã xảy ra lỗi kết nối khi gửi báo cáo!");
             });
         }
     </script>
