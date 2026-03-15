@@ -54,6 +54,7 @@
             <li>2. Mọi hành vi: <b>Alt+Tab, Bấm Esc, Mở tab khác, Click ra ngoài</b> đều bị ghi nhận.</li>
             <li>3. Khi vi phạm, bài thi sẽ bị TÊ LIỆT hoàn toàn.</li>
             <li>4. Vi phạm quá <b>3 lần</b> -> Hủy bài và tự động nộp điểm 0.</li>
+
         </ul>
         <button class="btn-start" onclick="startTest()">Đã hiểu - Bắt đầu làm bài</button>
     </div>
@@ -968,12 +969,21 @@
 
     <div class="section">
         <h2>PART III: WRITING</h2>
+        <div style="background-color: #fff3cd; border-left: 5px solid #ffc107; padding: 15px; margin-bottom: 20px; border-radius: 4px;">
+                <strong style="color: #d35400; font-size: 18px;">⚠️ LƯU Ý:</strong>
+                <ul style="margin-top: 10px; margin-bottom: 0; color: #333; font-size: 16px; line-height: 1.6;">
+                    <li>Hệ thống chấm điểm tự động bằng máy. Em phải kiểm tra kỹ khi nào cần <b>viết hoa</b>, khi nào <b>viết thường</b> (ví dụ: đại từ nhân xưng "I" luôn phải viết hoa).</li>
+                    <li>Ở phần viết lại câu (Task 2), em phải tuân thủ tuyệt đối quy tắc dấu câu: <b>Dấu phẩy (,) phải dính sát vào chữ đứng trước</b>, sau đó <b>cách ra 1 khoảng trắng</b> rồi mới viết tiếp.<br>
+                    <i>(Ví dụ sai: <code>If it rains ,I will</code> ➔ Ví dụ đúng: <code>If it rains, I will</code>)</i></li>
+                    <li>Cuối một câu hoàn chỉnh <b>bắt buộc phải có dấu chấm (.)</b>.</li>
+                </ul>
+            </div>
         
         <h3>Task 1: Give the correct form of the word in brackets (Word Form)</h3>
             
             <p class="instruction" style="font-weight:bold;">UNIT 4</p>
             <div class="question-block">
-                <div class="question-text">1. The (sun) __________ is shining brightly today. Let's go to the beach!</div>
+                <div class="question-text">1. It is a very (sun) __________ day today. Let's go to the beach!</div>
                 <input type="text" name="w1" class="writing-input" placeholder="Your answer...">
             </div>
             <div class="question-block">
@@ -1287,7 +1297,7 @@
 
         function submitTest(isForce = false) {
             if (!isForce) {
-                let confirmSubmit = confirm("Em có chắc chắn nộp? Máy sẽ chấm điểm tự luận cực kỳ khắt khe!");
+                let confirmSubmit = confirm("Em có chắc chắn nộp?");
                 if (!confirmSubmit) return;
                 logActivity("HỆ THỐNG", "Thí sinh tự nguyện nộp bài.");
             }
