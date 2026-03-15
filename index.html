@@ -1133,6 +1133,13 @@
 
 
         <button id="submit-btn" onclick="submitTest(false)">NỘP BÀI</button>
+    <div id="detailed-explanations">
+            <h2>HƯỚNG DẪN CHẤM CHI TIẾT (ANSWER KEY)</h2>
+            <div class="intro-text">
+                Chào bạn, đây là toàn bộ phần đáp án và hướng dẫn giải chi tiết...
+            </div>
+            </div>
+
     </div>
 
     <script>
@@ -1144,57 +1151,79 @@
         let isExamLocked = false; 
         const activityLog = [];
 
-        // Chống F12, Ctrl+C, Ctrl+P...
+        // 1. ĐÁP ÁN TRẮC NGHIỆM (86 câu)
+        const mcqAnswerKey = {
+            "q1": "C", "q2": "C", "q3": "C", "q4": "A", "q5": "B", "q6": "C", "q7": "A", "q8": "C", "q9": "D", "q10": "A",
+            "q11": "B", "q12": "A", "q13": "B", "q14": "C", "q15": "B", "q16": "A", "q17": "C", "q18": "A", "q19": "B", "q20": "B",
+            "q21": "C", "q22": "D", "q23": "C", "q24": "C", "q25": "A", "q26": "B", "q27": "C", "q28": "A", "q29": "A", "q30": "C",
+            "q31": "B", "q32": "A", "q33": "C", "q34": "D", "q35": "B", "q36": "C", "q37": "C", "q38": "B", "q39": "A", "q40": "C",
+            "q41": "A", "q42": "A", "q43": "B", "q44": "A", "q45": "A", "q46": "C", "q47": "A", "q48": "B", "q49": "C", "q50": "B",
+            "q51": "B", "q52": "C", "q53": "B", "q54": "C", "q55": "A", "q56": "C", "q57": "B", "q58": "C", "q59": "A", "q60": "C",
+            "c1_1": "A", "c1_2": "B", "c1_3": "A", "c1_4": "A", "c1_5": "C", "c1_6": "D", 
+            "c2_1": "B", "c2_2": "A", "c2_3": "C", "c2_4": "A", "c2_5": "C", "c2_6": "B",
+            "c3_1": "B", "c3_2": "A", "c3_3": "A", "c3_4": "C", "c3_5": "B", "c3_6": "B",
+            "rc1": "B", "rc2": "C", "rc3": "B", "rc4": "C", "rc5": "B", "rc6": "B", "rc7": "A", "rc8": "B"
+        };
+
+        // 2. ĐÁP ÁN TỰ LUẬN (36 câu) - Khai báo mảng để lường trước câu có 2 cách viết đúng. 
+        // Thật cẩn thận dấu cách và chữ in hoa.
+        const writtenAnswerKey = {
+            "w1": ["sunny"], "w2": ["stormy"], "w3": ["polluted"], "w4": ["Global"], "w5": ["danger"],
+            "w6": ["freezing"], "w7": ["environment"], "w8": ["disastrous"], "w9": ["actor"], "w10": ["creative"],
+            "w11": ["stressful"], "w12": ["assistant"], "w13": ["farmer"], "w14": ["challenging"], "w15": ["employment"],
+            "w16": ["builders"], "w17": ["baker's"], "w18": ["affordable"], "w19": ["donation"], "w20": ["investor"],
+            "w21": ["payment"], "w22": ["valuable"], "w23": ["receipt"], "w24": ["discount"],
+            "w25": ["longest river in the world."], 
+            "w26": ["hot for me to drink."],
+            "w27": ["high as Mount Everest."],
+            "w28": ["small for our big family to live in."],
+            "w29": ["hurry up, you will miss the school bus."],
+            "w30": ["going to travel to Da Lat next weekend."],
+            "w31": ["is wearing a beautiful red dress is my sister."],
+            "w32": ["my father works every day."],
+            "w33": ["the answer, I could tell you.", "the answer, I would tell you."], // 2 cách được chấp nhận
+            "w34": ["done all her homework, she watched TV."],
+            "w35": ["a bird, I could fly in the sky.", "a bird, I would fly in the sky."], // 2 cách được chấp nhận
+            "w36": ["into the building, he had parked his car."]
+        };
+
+        // Khóa phím tắt
         document.addEventListener('keydown', function(e) {
-            if (e.key === 'F12' || 
-               (e.ctrlKey && e.shiftKey && e.key === 'I') || 
-               (e.ctrlKey && e.key === 'c') ||
-               (e.ctrlKey && e.key === 'p')) {
+            if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I') || (e.ctrlKey && e.key === 'c') || (e.ctrlKey && e.key === 'p')) {
                 e.preventDefault();
                 logActivity("CỐ TÌNH", "Thí sinh cố gắng dùng phím tắt bị cấm (F12/Copy/Print).");
             }
         });
 
-        // Hàm bắt đầu thi
         function startTest() {
             const name = document.getElementById('studentName').value.trim();
             const className = document.getElementById('studentClass').value.trim();
-
-            if(name === "" || className === "") {
-                alert("Yêu cầu nhập đủ Họ Tên và Lớp!");
-                return;
-            }
+            if(name === "" || className === "") { alert("Yêu cầu nhập đủ Họ Tên và Lớp!"); return; }
 
             logActivity("SYSTEM", "Bắt đầu làm bài. Thí sinh: " + name + " - " + className);
-
             document.getElementById('start-screen').style.display = 'none';
             document.getElementById('test-container').style.display = 'block';
             document.getElementById('header-bar').style.display = 'flex';
             document.getElementById('display-name').innerText = name + " (" + className + ")";
 
-            // Ép toàn màn hình
             requestFullScreen();
-
             testActive = true;
             startTimer();
-            monitorRadioClicks();
+            monitorInputs();
         }
 
-        // Ép toàn màn hình bằng hàm chuẩn
         function requestFullScreen() {
             let elem = document.documentElement;
             if (elem.requestFullscreen) { elem.requestFullscreen().catch(err => console.log(err)); }
-            else if (elem.webkitRequestFullscreen) { elem.webkitRequestFullscreen(); } // Safari
-            else if (elem.msRequestFullscreen) { elem.msRequestFullscreen(); } // IE11
+            else if (elem.webkitRequestFullscreen) { elem.webkitRequestFullscreen(); } 
+            else if (elem.msRequestFullscreen) { elem.msRequestFullscreen(); } 
         }
 
-        // HÀM KHÓA BÀI THI KHI PHÁT HIỆN GIAN LẬN
         function lockExam(reason) {
             if(!testActive || isExamLocked) return;
             isExamLocked = true;
             violations++;
             
-            // Cập nhật số đếm giao diện
             document.getElementById('violation-count').innerText = violations;
             document.getElementById('blocker-violation-count').innerText = violations;
             document.getElementById('cheat-reason').innerText = "Nguyên nhân: " + reason;
@@ -1205,47 +1234,26 @@
                 document.getElementById('cheat-blocker').innerHTML = "<h1 style='font-size:4rem'>BÀI THI BỊ HỦY!</h1><h2>Em đã vi phạm quá 3 lần. Hệ thống đang thu bài tự động...</h2>";
                 document.getElementById('cheat-blocker').style.display = 'flex';
                 logActivity("HỆ THỐNG", "HỦY BÀI do vi phạm quá 3 lần.");
-                setTimeout(() => submitTest(true), 2000); // 2 giây sau tự nộp
+                setTimeout(() => submitTest(true), 2000); 
                 return;
             }
-            
-            // Hiển thị màng đỏ phong tỏa toàn bộ màn hình
             document.getElementById('cheat-blocker').style.display = 'flex';
         }
 
-        // HÀM MỞ KHÓA KHI HỌC SINH CHẤP NHẬN QUAY LẠI
         function resumeExam() {
             let elem = document.documentElement;
-            // Bắt buộc trình duyệt vào lại full screen qua thao tác click
             if (elem.requestFullscreen) {
                 elem.requestFullscreen().then(() => {
                     document.getElementById('cheat-blocker').style.display = 'none';
                     isExamLocked = false;
-                    logActivity("HỆ THỐNG", "Thí sinh đã click quay lại toàn màn hình và tiếp tục.");
-                }).catch(err => {
-                    alert("Trình duyệt từ chối. Hãy ấn lại lần nữa!");
-                });
+                    logActivity("HỆ THỐNG", "Thí sinh quay lại toàn màn hình.");
+                }).catch(err => { alert("Trình duyệt từ chối yêu cầu. Hãy ấn lại lần nữa!"); });
             }
         }
 
-        // LƯỚI QUÉT 1: Bắt Alt+Tab hoặc click sang cửa sổ khác (Mất tiêu điểm)
-        window.addEventListener('blur', () => {
-            if(testActive) { lockExam("Mất tiêu điểm (Dùng Alt+Tab, mở ứng dụng khác, hoặc click ra ngoài cửa sổ thi)."); }
-        });
-
-        // LƯỚI QUÉT 2: Bắt hành vi thu nhỏ trình duyệt hoặc đổi Tab trên cùng cửa sổ
-        document.addEventListener('visibilitychange', () => {
-            if(testActive && document.visibilityState === 'hidden') {
-                lockExam("Chuyển Tab trình duyệt hoặc ẩn cửa sổ trình duyệt xuống thanh Taskbar.");
-            }
-        });
-
-        // LƯỚI QUÉT 3: Bắt hành vi nhấn ESC thoát toàn màn hình
-        document.addEventListener('fullscreenchange', () => {
-            if(testActive && !document.fullscreenElement && !isExamLocked) {
-                lockExam("Tự ý nhấn nút thoát chế độ Toàn Màn Hình.");
-            }
-        });
+        window.addEventListener('blur', () => { if(testActive) lockExam("Mất tiêu điểm (Alt+Tab hoặc click ra ngoài cửa sổ)."); });
+        document.addEventListener('visibilitychange', () => { if(testActive && document.visibilityState === 'hidden') lockExam("Chuyển Tab trình duyệt hoặc ẩn cửa sổ."); });
+        document.addEventListener('fullscreenchange', () => { if(testActive && !document.fullscreenElement && !isExamLocked) lockExam("Tự ý thoát chế độ Toàn Màn Hình."); });
 
         function startTimer() {
             const timerDisplay = document.getElementById('timer');
@@ -1263,13 +1271,19 @@
             }, 1000);
         }
 
-        function monitorRadioClicks() {
-            const radios = document.querySelectorAll('input[type=radio]');
-            radios.forEach(radio => {
+        function monitorInputs() {
+            // Theo dõi trắc nghiệm
+            document.querySelectorAll('input[type=radio]').forEach(radio => {
                 radio.addEventListener('change', function(e) {
-                    const qName = e.target.name;
-                    const val = e.target.value;
-                    logActivity("CHỌN ĐÁP ÁN", `Câu ${qName.replace('Q','')} -> ${val}`);
+                    logActivity("CHỌN TRẮC NGHIỆM", `Câu ${e.target.name} -> ${e.target.value}`);
+                });
+            });
+            // Theo dõi gõ chữ tự luận
+            document.querySelectorAll('input[type=text].writing-input').forEach(txt => {
+                txt.addEventListener('blur', function(e) {
+                    if(e.target.value.trim() !== "") {
+                        logActivity("GÕ TỰ LUẬN", `Câu ${e.target.name} -> Gõ: "${e.target.value}"`);
+                    }
                 });
             });
         }
@@ -1282,7 +1296,7 @@
 
         function submitTest(isForce = false) {
             if (!isForce) {
-                let confirmSubmit = confirm("Em đã kiểm tra kỹ chưa? Đồng ý nộp bài?");
+                let confirmSubmit = confirm("Em có chắc chắn nộp? Máy sẽ chấm điểm tự luận cực kỳ khắt khe!");
                 if (!confirmSubmit) return;
                 logActivity("HỆ THỐNG", "Thí sinh tự nguyện nộp bài.");
             }
@@ -1290,35 +1304,129 @@
             testActive = false;
             clearInterval(timerInterval);
 
-            // Gom đáp án
-            let finalAnswers = "ĐÁP ÁN CUỐI CÙNG:\n";
-            const questions = new Set([...document.querySelectorAll('input[type=radio]')].map(el => el.name));
-            questions.forEach(q => {
-                const checked = document.querySelector(`input[name="${q}"]:checked`);
-                finalAnswers += `Câu ${q.replace('Q','')}: ${checked ? checked.value : 'Chưa chọn'}\n`;
-            });
+            let correctCount = 0;
+            // Tổng 122 câu (86 MCQ + 36 Tự luận)
+            let totalQuestions = Object.keys(mcqAnswerKey).length + Object.keys(writtenAnswerKey).length; 
+            let scorePerQuestion = 10 / totalQuestions;
+            let finalAnswersLog = "ĐÁP ÁN CUỐI CÙNG CỦA THÍ SINH:\n\n[PHẦN TRẮC NGHIỆM]\n";
 
-            // Lập báo cáo
+            // 1. Chấm Trắc Nghiệm
+            for (let qName in mcqAnswerKey) {
+                let correctAns = mcqAnswerKey[qName];
+                let userRadio = document.querySelector(`input[name="${qName}"]:checked`);
+                let userAns = userRadio ? userRadio.value : null;
+
+                finalAnswersLog += `Câu ${qName}: ${userAns ? userAns : 'Chưa chọn'} (Đúng: ${correctAns})\n`;
+
+                let correctRadio = document.querySelector(`input[name="${qName}"][value="${correctAns}"]`);
+                if(correctRadio) {
+                    let correctLabel = correctRadio.parentElement;
+                    if (userAns === correctAns) {
+                        correctCount++;
+                        correctLabel.style.backgroundColor = 'rgba(57, 255, 20, 0.2)'; 
+                        correctLabel.style.color = '#1b730d'; 
+                        correctLabel.style.fontWeight = 'bold';
+                        correctLabel.style.border = '2px solid #39ff14';
+                        correctLabel.innerHTML += ' <span style="color:#27ae60; font-weight:bold; float:right;">✔ CHÍNH XÁC</span>';
+                    } else {
+                        if (userRadio) {
+                            let userLabel = userRadio.parentElement;
+                            userLabel.style.backgroundColor = 'rgba(255, 0, 0, 0.1)';
+                            userLabel.style.color = 'red';
+                            userLabel.style.border = '2px solid red';
+                            userLabel.innerHTML += ' <span style="color:red; font-weight:bold; float:right;">✘ SAI</span>';
+                        }
+                        correctLabel.style.color = '#27ae60';
+                        correctLabel.style.fontWeight = 'bold';
+                        correctLabel.innerHTML += ' <span style="color:#27ae60; font-weight:bold; float:right;">👈 ĐÁP ÁN ĐÚNG</span>';
+                    }
+                }
+                document.querySelectorAll(`input[name="${qName}"]`).forEach(r => r.disabled = true);
+            }
+
+            // 2. Chấm Tự Luận (Gắt gao 100%)
+            finalAnswersLog += "\n[PHẦN TỰ LUẬN]\n";
+            for (let wName in writtenAnswerKey) {
+                let correctAnsArray = writtenAnswerKey[wName]; // Mảng chứa các chuỗi đáp án đúng
+                let txtInput = document.querySelector(`input[name="${wName}"]`);
+                
+                if(txtInput) {
+                    // Lấy nguyên giá trị gốc của học sinh, không tự ý xóa khoảng trắng đầu/cuối theo yêu cầu gắt gao
+                    let userAns = txtInput.value; 
+                    finalAnswersLog += `Câu ${wName}: "${userAns}" (Đúng: "${correctAnsArray.join(' HOẶC ')}")\n`;
+
+                    if (correctAnsArray.includes(userAns)) {
+                        // So sánh chuỗi hoàn hảo
+                        correctCount++;
+                        txtInput.style.backgroundColor = 'rgba(57, 255, 20, 0.2)';
+                        txtInput.style.borderColor = '#39ff14';
+                        txtInput.style.color = '#1b730d';
+                        txtInput.style.fontWeight = 'bold';
+                        txtInput.insertAdjacentHTML('afterend', ' <span style="color:#27ae60; font-weight:bold; font-size: 18px;">✔ CHÍNH XÁC</span>');
+                    } else {
+                        txtInput.style.backgroundColor = 'rgba(255, 0, 0, 0.1)';
+                        txtInput.style.borderColor = 'red';
+                        txtInput.style.color = 'red';
+                        txtInput.insertAdjacentHTML('afterend', ` <span style="color:red; font-weight:bold; font-size: 18px;">✘ SAI</span> <br><span style="color:#27ae60; font-weight:bold; font-size: 16px;">(Đáp án chuẩn máy tính: <b>${correctAnsArray[0]}</b>)</span>`);
+                    }
+                    txtInput.disabled = true;
+                }
+            }
+
+            let finalScore = (scorePerQuestion * correctCount).toFixed(2);
+
+            // Bảng Điểm
+            let scoreBoard = document.createElement('div');
+            scoreBoard.innerHTML = `
+                <div style="background: #2c3e50; color: white; padding: 20px; border-radius: 8px; text-align: center; margin-bottom: 30px; border: 4px solid #f1c40f;">
+                    <h2 style="margin: 0; font-size: 24px;">KẾT QUẢ TOÀN BÀI (TRẮC NGHIỆM & TỰ LUẬN)</h2>
+                    <h1 style="font-size: 60px; color: #39ff14; margin: 10px 0; text-shadow: 0 0 10px rgba(57,255,20,0.5);">${finalScore} <span style="font-size:30px; color:white;">/ 10</span></h1>
+                    <p style="font-size: 20px; margin:0;">Số câu đúng: <b>${correctCount} / ${totalQuestions}</b></p>
+                    <p style="color: #f1c40f; margin-top: 15px; font-weight: bold; font-size: 18px;">⏳ Hệ thống đang gửi ngầm báo cáo cho giáo viên. Xin vui lòng đợi...</p>
+                </div>
+            `;
+            document.getElementById('test-container').prepend(scoreBoard);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            
+            document.getElementById('submit-btn').style.display = 'none';
+            document.getElementById('detailed-explanations').style.display = 'block';
+
+            // Soạn Mail Báo Cáo
             let reportContent = "=== BÁO CÁO GIÁM SÁT THI TRỰC TUYẾN ===\n\n";
             reportContent += "Họ và Tên: " + document.getElementById('studentName').value + "\n";
             reportContent += "Lớp: " + document.getElementById('studentClass').value + "\n";
+            reportContent += `TỔNG ĐIỂM: ${finalScore} / 10 (${correctCount}/${totalQuestions} câu)\n`;
             reportContent += "TỔNG SỐ LẦN GIAN LẬN: " + violations + "/3\n";
-            reportContent += "Thời gian còn dư: " + Math.floor(timeLimit / 60) + " phút " + (timeLimit % 60) + " giây\n";
             reportContent += "---------------------------\n\n";
-            reportContent += finalAnswers + "\n";
+            reportContent += finalAnswersLog + "\n";
             reportContent += "---------------------------\n";
-            reportContent += "LỊCH SỬ GIÁM SÁT HÀNH VI (TỪNG GIÂY):\n";
+            reportContent += "LỊCH SỬ HÀNH VI CỦA THÍ SINH:\n";
             reportContent += activityLog.join("\n");
 
-            // Tải file về máy
-            const blob = new Blob([reportContent], { type: 'text/plain;charset=utf-8' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = `BaiThi_${document.getElementById('studentClass').value}_${document.getElementById('studentName').value}.txt`;
-            link.click();
-
-            // Màn hình kết thúc
-            document.body.innerHTML = "<div style='display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; background:#2ecc71; color:white; padding:20px; text-align:center;'><h1 style='font-size:3rem'>ĐÃ NỘP BÀI THÀNH CÔNG!</h1><h2 style='max-width:800px;'>Hãy kiểm tra thư mục 'Downloads' trên máy để lấy file kết quả dạng .txt và nộp lại cho giáo viên của em.</h2></div>";
+            // Web3Forms API: TỰ ĐỘNG GỬI VỀ EMAIL CỦA EM
+            fetch("https://api.web3forms.com/submit", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json"
+                },
+                body: JSON.stringify({
+                    access_key: "8f705510-1c71-4183-88e5-a9f1b54c0251", // MÃ BẢO MẬT CỦA EM
+                    subject: `[Điểm: ${finalScore}] Lớp ${document.getElementById('studentClass').value} - ${document.getElementById('studentName').value}`,
+                    from_name: "Hệ Thống Thi Trực Tuyến",
+                    message: reportContent.replace(/\n/g, "<br>") // Chuyển xuống dòng chuẩn cho Email
+                })
+            })
+            .then(async (response) => {
+                if (response.status == 200) {
+                    alert("Bài thi đã được chấm điểm tự động và gửi thành công tới Email của Giáo viên!");
+                } else {
+                    alert("Bài thi đã được lưu trên máy của em, nhưng có lỗi mạng không thể gửi ngầm cho giáo viên.");
+                }
+            })
+            .catch(error => {
+                console.log(error);
+            });
         }
     </script>
 </body>
