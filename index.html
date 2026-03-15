@@ -1368,7 +1368,7 @@
                         txtInput.style.backgroundColor = 'rgba(255, 0, 0, 0.1)';
                         txtInput.style.borderColor = 'red';
                         txtInput.style.color = 'red';
-                        txtInput.insertAdjacentHTML('afterend', ` <span style="color:red; font-weight:bold; font-size: 18px;">✘ SAI</span> <br><span style="color:#27ae60; font-weight:bold; font-size: 16px;">(Đáp án chuẩn máy tính: <b>${correctAnsArray[0]}</b>)</span>`);
+                        txtInput.insertAdjacentHTML('afterend', ` <span style="color:red; font-weight:bold; font-size: 18px;">✘ SAI</span> <br><span style="color:#27ae60; font-weight:bold; font-size: 16px;">(Đáp án: <b>${correctAnsArray[0]}</b>)</span>`);
                     }
                     txtInput.disabled = true;
                 }
@@ -1383,7 +1383,6 @@
                     <h2 style="margin: 0; font-size: 24px;">KẾT QUẢ TOÀN BÀI (TRẮC NGHIỆM & TỰ LUẬN)</h2>
                     <h1 style="font-size: 60px; color: #39ff14; margin: 10px 0; text-shadow: 0 0 10px rgba(57,255,20,0.5);">${finalScore} <span style="font-size:30px; color:white;">/ 10</span></h1>
                     <p style="font-size: 20px; margin:0;">Số câu đúng: <b>${correctCount} / ${totalQuestions}</b></p>
-                    <p style="color: #f1c40f; margin-top: 15px; font-weight: bold; font-size: 18px;">⏳ Hệ thống đang gửi ngầm báo cáo cho giáo viên. Xin vui lòng đợi...</p>
                 </div>
             `;
             document.getElementById('test-container').prepend(scoreBoard);
